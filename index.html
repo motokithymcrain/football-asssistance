@@ -4,53 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F.I.T. Football Assistant</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for skill chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Google Fonts - Noto Sans JP -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Noto Sans JP', sans-serif;
             background-color: #f3f4f6; /* bg-gray-100 */
         }
-        /* サイドバーのレスポンシブ設定 */
         .sidebar {
-            /* スマホでは画面左端に固定し、最初は非表示 */
-            position: fixed;
-            z-index: 40;
-            height: 100vh;
-            transform: translateX(-100%);
             transition: transform 0.3s ease-in-out;
-        }
-        .sidebar.open {
-            /* openクラスが付くとスライドして表示 */
             transform: translateX(0);
         }
-        /* PC/タブレット(md)サイズ以上では常時表示 */
-        @media (min-width: 768px) {
-            .sidebar {
-                position: relative;
-                transform: translateX(0);
-            }
-        }
-        /* メニュー項目のスタイル */
         .sidebar-item {
             cursor: pointer;
             transition: all 0.2s ease;
+            position: relative;
             padding: 12px 20px;
             margin-bottom: 8px;
             border-radius: 8px;
             font-weight: 700;
         }
         .sidebar-item:hover {
-            background-color: #e0e7ff; 
-            color: #4f46e5;
+            background-color: #e0e7ff; /* hover:bg-indigo-100 */
+            color: #4f46e5; /* hover:text-indigo-600 */
         }
         .sidebar-item.active {
-            background-color: #4f46e5; 
+            background-color: #4f46e5; /* bg-indigo-600 */
             color: white;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
-        /* チャートのコンテナ */
+        /* スキルレーダーチャートのコンテナの高さ調整 */
         .chart-container {
             position: relative;
             height: 300px;
@@ -60,13 +47,15 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <div id="sidebar" class="sidebar w-64 bg-white shadow-xl flex-shrink-0 md:relative md:translate-x-0">
+    <!-- サイドバー (グローバルメニュー) -->
+    <div id="sidebar" class="sidebar w-64 bg-white shadow-xl flex-shrink-0">
         <div class="p-6">
             <h1 class="text-2xl font-extrabold text-indigo-700">Football Assistant</h1>
         </div>
         
         <nav class="p-4 space-y-1">
             <p class="text-xs font-semibold uppercase text-gray-500 mb-2 px-4">MENU</p>
+            <!-- メニュー項目 (JavaScriptでactiveクラスを制御) -->
             <div id="menu-profile" class="sidebar-item active" onclick="navigateTo('profile')">
                 プロファイル
             </div>
@@ -88,23 +77,17 @@
         </nav>
     </div>
 
-    <div class="flex-grow flex flex-col overflow-auto">
-        <header class="bg-white p-4 shadow-md flex items-center flex-shrink-0">
-            <button id="menu-toggle" class="md:hidden p-2 text-gray-600 hover:text-gray-800 focus:outline-none mr-4" onclick="toggleSidebar()">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                </svg>
-            </button>
-            <div class="flex flex-col">
-                <h2 id="page-header" class="text-xl md:text-2xl font-semibold text-gray-800"></h2>
-                <div id="player-info" class="text-sm text-gray-500 mt-1"></div>
-            </div>
+    <!-- メインコンテンツエリア -->
+    <div class="flex-grow overflow-auto p-4 md:p-8">
+        <!-- ページタイトル -->
+        <header class="bg-white p-4 rounded-lg shadow-md mb-8">
+            <h2 id="page-header" class="text-xl md:text-2xl font-semibold text-gray-800"></h2>
+            <div id="player-info" class="text-sm text-gray-500 mt-1"></div>
         </header>
 
-        <main id="main-content" class="flex-grow p-4 md:p-8 overflow-auto"></main>
+        <!-- コンテンツ表示エリア -->
+        <main id="main-content" class="h-full"></main>
     </div>
-    
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-0 transition-opacity duration-300 pointer-events-none md:hidden" onclick="toggleSidebar()"></div>
 
     <script>
         // グローバル変数: 現在表示しているページ
@@ -151,95 +134,19 @@
         function saveTeamPlayers() {
             sessionStorage.setItem('teamPlayers', JSON.stringify(teamPlayers));
         }
-        
-        // --- ページの切り替えとサイドバー制御 ---
-        
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const isOpen = sidebar.classList.toggle('open');
-            
-            if (isOpen) {
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
-                overlay.classList.add('opacity-50');
-            } else {
-                overlay.classList.remove('opacity-50');
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-            }
-        }
 
-
-        function navigateTo(pageId) {
-            currentPage = pageId;
-            renderPage();
-            
-            // サイドバーのアクティブ状態を更新
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            const activeMenuItem = document.getElementById(`menu-${pageId}`);
-            if (activeMenuItem) {
-                activeMenuItem.classList.add('active');
-            }
-            
-            // スマホの場合、ナビゲーション後にサイドバーを閉じる
-            if (window.innerWidth < 768) {
-                toggleSidebar();
-            }
-        }
-
-        function renderPage() {
-            const mainContent = document.getElementById('main-content');
-            const pageData = pageContents[currentPage];
-
-            if (pageData) {
-                updateHeader(pageData.title);
-                mainContent.innerHTML = pageData.content();
-
-            } else {
-                mainContent.innerHTML = `<div class="p-8 text-center text-gray-500">ページが見つかりません。</div>`;
-                updateHeader('エラー');
-            }
-        }
-        
-        // --- チームメンバー追加関数 (前回追加分) ---
-        
-        function addPlayerToTeam(event) {
-            event.preventDefault(); 
-            
-            const nameInput = document.getElementById('new-player-name');
-            const numberInput = document.getElementById('new-player-number');
-            const positionInput = document.getElementById('new-player-position');
-
-            const newPlayer = {
-                name: nameInput.value.trim(),
-                number: numberInput.value.trim(),
-                position: positionInput.value.trim().toUpperCase()
-            };
-
-            if (newPlayer.name && newPlayer.number && newPlayer.position) {
-                teamPlayers.push(newPlayer);
-                saveTeamPlayers();
-                
-                nameInput.value = '';
-                numberInput.value = '';
-                positionInput.value = '';
-
-                renderPage(); 
-            } else {
-                console.error("すべてのフィールドを入力してください。");
-            }
-        }
-
-        // --- 1. 各ページの内容を生成する関数 --- (レスポンシブ対応)
+        // --- 1. 各ページの内容を生成する関数 ---
+        // PPTの内容に基づいて作成
 
         function createProfileContent() {
+            // プロファイルページの内容
             const content = `
-                <div class="space-y-6">
+                <div class="space-y-6 p-4 md:p-8">
                     <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">プロファイル詳細</h2>
                     <p class="text-gray-600 mb-8">あなたの基本的な情報と、プレーヤーとしての特性を把握します。これらの情報はチーム分析やAIアドバイスの基盤となります。</p>
         
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- 基本データ -->
                         <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
                             <h3 class="text-xl font-semibold text-indigo-700 mb-4">基本データ</h3>
                             <div class="space-y-3 text-lg">
@@ -250,6 +157,7 @@
                             </div>
                         </div>
         
+                        <!-- 強みと弱み -->
                         <div class="grid grid-rows-2 gap-4">
                             <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-green-500">
                                 <h3 class="text-xl font-semibold text-green-700 mb-4">強み</h3>
@@ -273,18 +181,20 @@
                     </div>
                 </div>
             `;
+            // チャートをレンダリングするためにDOM操作をスケジュール
             setTimeout(renderSkillChart, 0); 
             return content;
         }
 
         function renderSkillChart() {
+            // 既に Chart.js のインスタンスが存在する場合は破棄
             const existingChart = Chart.getChart("skillChart");
             if (existingChart) {
                 existingChart.destroy();
             }
 
             const ctx = document.getElementById('skillChart');
-            if (!ctx) return; 
+            if (!ctx) return; // 要素が存在しない場合はスキップ
 
             new Chart(ctx, {
                 type: 'radar',
@@ -292,9 +202,9 @@
                     labels: ['フィジカル', 'パス', 'テクニック', '戦術理解度', '判断力', '決定力'],
                     datasets: [{
                         label: 'Kengo Oda スキル評価',
-                        data: [85, 90, 60, 75, 80, 50],
+                        data: [85, 90, 60, 75, 80, 50], // ダミーデータ
                         fill: true,
-                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)', // indigo-600
                         borderColor: 'rgb(79, 70, 229)',
                         pointBackgroundColor: 'rgb(79, 70, 229)',
                         pointBorderColor: '#fff',
@@ -310,7 +220,7 @@
                             angleLines: { display: false },
                             suggestedMin: 0,
                             suggestedMax: 100,
-                            ticks: { display: false }
+                            ticks: { display: false } // 目盛りラベル非表示
                         }
                     },
                     plugins: {
@@ -322,6 +232,7 @@
         }
         
         function createTeamContent() {
+            // チーム分析ページの内容
             const teamPlayerListHtml = teamPlayers.map(player => `
                 <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <span class="font-semibold text-gray-800">${player.name}</span>
@@ -330,11 +241,12 @@
             `).join('');
 
             return `
-                <div class="space-y-6">
+                <div class="space-y-6 p-4 md:p-8">
                     <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">チーム分析とメンバー管理</h2>
                     <p class="text-gray-600 mb-8">チームのメンバー情報とフォーメーションを分析し、AIに最適な戦略を相談します。</p>
         
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- チームメンバー入力フォーム -->
                         <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-xl border-t-4 border-indigo-500">
                             <h3 class="text-xl font-semibold text-indigo-700 mb-4">チームメンバー追加</h3>
                             <form id="add-player-form" onsubmit="addPlayerToTeam(event)">
@@ -349,4 +261,343 @@
                                     </div>
                                     <div>
                                         <label for="new-player-position" class="block text-sm font-medium text-gray-700">ポジション (例: FW, DF, GK)</label>
-                                        <input type="text
+                                        <input type="text" id="new-player-position" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <button type="submit" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                                        選手を追加
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <!-- チームメンバー一覧 -->
+                            <h3 class="text-xl font-semibold text-indigo-700 mt-8 mb-4 border-t pt-4">現在のメンバー (${teamPlayers.length}名)</h3>
+                            <ul id="team-player-list" class="space-y-2 max-h-60 overflow-y-auto">
+                                ${teamPlayerListHtml}
+                            </ul>
+                            
+                        </div>
+                        
+                        <!-- チームフォーメーションとスタイル -->
+                        <div class="lg:col-span-2 space-y-8">
+                            <!-- フォーメーション -->
+                            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                                <h3 class="text-xl font-semibold text-blue-700 mb-4 border-b pb-2">現在のフォーメーション</h3>
+                                <p class="text-4xl font-extrabold text-indigo-600 mb-4">${playerData.formation}</p>
+                                <div class="text-center bg-gray-100 p-8 rounded-lg">
+                                    <!-- PPTのスライドのイメージを表現 -->
+                                    <svg class="w-full h-auto max-h-72 mx-auto" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="10" y="10" width="380" height="230" rx="5" stroke="#22c55e" stroke-width="2" fill="#d1fae5"/>
+                                        <circle cx="200" cy="125" r="30" stroke="#22c55e" stroke-width="2" fill="none"/>
+                                        <line x1="200" y1="10" x2="200" y2="240" stroke="#22c55e" stroke-width="1"/>
+                                        <text x="200" y="130" text-anchor="middle" fill="#15803d" font-size="14">4-2-2-2</text>
+                                        <rect x="10" y="80" width="30" height="90" rx="3" stroke="#22c55e" stroke-width="2" fill="none"/>
+                                        <rect x="360" y="80" width="30" height="90" rx="3" stroke="#22c55e" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- チームスタイルとAI相談 -->
+                            <div class="bg-indigo-50 p-6 rounded-lg shadow-inner">
+                                <h3 class="text-xl font-semibold text-blue-700 mb-4 border-b pb-2">チームスタイル</h3>
+                                <p class="text-gray-600 mb-6 border-l-4 border-blue-200 pl-3 italic">
+                                    組織的な守備からの素早いカウンターを志向し、特に中盤のプレスでボールを奪い、フィジカルの強さを活かした縦への展開を得意とする。（PPTの内容を反映）
+                                </p>
+                                
+                                <h3 class="text-2xl font-semibold text-indigo-800 mb-4 mt-6">AI相談：最適な戦略</h3>
+                                <label for="ai-team-query" class="block text-sm font-medium text-gray-700 mb-2">メンバーの強みを活かした最適なフォーメーションは？</label>
+                                <input type="text" id="ai-team-query" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="例: 攻撃的な4-3-3を試すにはどうすればいいか？">
+                                <button onclick="simulateAIResponse('team')" class="mt-3 w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">AIに相談する</button>
+                                <div id="ai-response-team" class="mt-4 p-3 bg-white border border-indigo-200 rounded-lg hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // チームメンバー追加関数
+        function addPlayerToTeam(event) {
+            event.preventDefault(); // フォームの送信を防止
+            
+            const nameInput = document.getElementById('new-player-name');
+            const numberInput = document.getElementById('new-player-number');
+            const positionInput = document.getElementById('new-player-position');
+
+            const newPlayer = {
+                name: nameInput.value.trim(),
+                number: numberInput.value.trim(),
+                position: positionInput.value.trim().toUpperCase()
+            };
+
+            if (newPlayer.name && newPlayer.number && newPlayer.position) {
+                teamPlayers.push(newPlayer);
+                saveTeamPlayers();
+                
+                // フォームをクリア
+                nameInput.value = '';
+                numberInput.value = '';
+                positionInput.value = '';
+
+                // ページを再レンダリングしてリストを更新
+                renderPage(); 
+            } else {
+                // エラーメッセージを表示する代わりに、コンソールにログを出力
+                console.error("すべてのフィールドを入力してください。");
+            }
+        }
+
+
+        function createTrainingContent() {
+            // トレーニング計画ページの内容 (PPT画像に基づき構造化)
+            return `
+                <div class="space-y-6 p-4 md:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">個別トレーニング計画</h2>
+                    <p class="text-gray-600 mb-8">あなたの弱点を克服し、強みをさらに伸ばすための専用トレーニングメニューを提案します。AIがカスタマイズしたメニューで効率的にスキルアップを目指しましょう。</p>
+        
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- 強化すべきスキル -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
+                            <h3 class="text-xl font-semibold text-red-700 mb-4">現在強化すべきスキル</h3>
+                            <ul class="list-disc list-inside space-y-2 text-lg text-gray-700">
+                                <li>**A: テクニックの向上** (弱点克服): 狭いスペースでのボールコントロールと方向転換</li>
+                                <li>**B: パスの質** (強み強化): プレッシャー下でのロングフィード精度</li>
+                                <li>**C: 予測とカバーリング** (ポジション特性): 相手FWの動き出しに対する一歩目の速さ</li>
+                            </ul>
+                        </div>
+        
+                        <!-- トレーニングメニュー提案AI -->
+                        <div class="bg-indigo-50 p-6 rounded-lg shadow-inner">
+                            <h3 class="text-2xl font-semibold text-indigo-800 mb-4">AI相談：おすすめトレーニング</h3>
+                            <p class="text-gray-700 mb-4">上記の強化スキルに基づき、具体的なトレーニングメニューを提案してもらいます。</p>
+                            <label for="ai-training-query" class="block text-sm font-medium text-gray-700 mb-2">具体的なトレーニングの目的 (例: 1週間のテクニックメニューを作成して)</label>
+                            <input type="text" id="ai-training-query" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="例: テクニック向上のためのドリルを3つ教えて">
+                            <button onclick="simulateAIResponse('training')" class="mt-3 w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">AIに相談する</button>
+                            <div id="ai-response-training" class="mt-4 p-3 bg-white border border-indigo-200 rounded-lg hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createReviewContent() {
+            // 試合振り返りページの内容
+            return `
+                <div class="space-y-6 p-4 md:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">試合振り返り・戦術分析</h2>
+                    <p class="text-gray-600 mb-8">試合を振り返り、客観的な視点を補強することで、フィジカルスキルとは異なる思考力・一瞬の判断力を鍛えます。</p>
+        
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- 試合情報と動画アップロード -->
+                        <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg border-t-4 border-gray-500 space-y-4">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">試合情報</h3>
+                            <div class="flex items-center space-x-4">
+                                <label for="review-date" class="font-medium text-gray-500">日付 (YY/MM/DD):</label>
+                                <input type="date" id="review-date" class="p-2 border rounded-lg flex-grow">
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <label for="review-number" class="font-medium text-gray-500">背番号:</label>
+                                <input type="text" id="review-number" value="${playerData.number}" class="p-2 border rounded-lg w-16 text-center" readonly>
+                            </div>
+        
+                            <h3 class="text-lg font-semibold text-gray-700 mt-6">動画ファイルアップロード</h3>
+                            <input type="file" id="video-upload" accept="video/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        </div>
+        
+                        <!-- シーンと思考の入力 -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
+                            <h3 class="text-xl font-semibold text-indigo-700 mb-4">シーンとあなたの思考</h3>
+                            <textarea id="scene-thought" rows="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="例: 後半35分、相手フォワードがドリブルを開始。私はカバーリングを意識したが、一瞬の判断でプレスを選択した。"></textarea>
+                            
+                            <h3 class="text-xl font-semibold text-indigo-700 mt-6 mb-4">AI相談：最適な判断</h3>
+                            <label for="ai-review-query" class="block text-sm font-medium text-gray-700 mb-2">○○分での最適な判断は何だったか教えて</label>
+                            <input type="text" id="ai-review-query" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="例: 後半35分のシーンで、カバーリングとプレスのどちらが正しかったか教えて">
+                            <button onclick="simulateAIResponse('review')" class="mt-3 w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">AIに相談する</button>
+                            <div id="ai-response-review" class="mt-4 p-3 bg-white border border-indigo-200 rounded-lg hidden"></div>
+                        </div>
+                    </div>
+        
+                    <!-- 強化すべきスキル (PPTの内容を構造化) -->
+                    <div class="mt-8 bg-white p-6 rounded-lg shadow-lg border-t-4 border-green-500">
+                        <h3 class="text-xl font-semibold text-green-700 mb-4">あなたが目指すべき役割と強化すべきスキル</h3>
+                        <p class="text-gray-700 mb-4">あなたの個性、チームの特性を踏まえて、あなたが目指すべき役割と、強化すべきスキルを提示します。</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-800">目指すべき役割:</h4>
+                                <ul class="list-disc list-inside ml-4 text-gray-600">
+                                    <li>最終ラインからの正確なビルドアップ（強み: パス）</li>
+                                    <li>セットプレーでのターゲットマンとしての貢献（強み: フィジカル）</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">強化すべきスキル:</h4>
+                                 <ul class="list-disc list-inside ml-4 text-gray-600">
+                                    <li>A: 危険予知能力の向上</li>
+                                    <li>C: 1対1の守備精度</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createPresentationContent() {
+            // プレゼンテーションページの内容
+            return `
+                <div class="space-y-6 p-4 md:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">チームミーティング資料作成</h2>
+                    <p class="text-gray-600 mb-8">次の試合に向けて、監督やチームメイトに提示する意識統一のためのプレゼンテーション資料を作成します。</p>
+        
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- 試合情報 -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500 space-y-4">
+                            <h3 class="text-xl font-semibold text-blue-700 mb-4">次の試合の基本情報</h3>
+                            <p><span class="font-medium text-gray-500 w-40 inline-block">次の試合相手:</span> <span class="text-gray-900 font-semibold">MNC</span></p>
+                            <p><span class="font-medium text-gray-500 w-40 inline-block">予想フォーメーション:</span> <span class="text-gray-900 font-semibold">4-2-3-1</span></p>
+                            <div class="mt-4">
+                                <label for="your-role" class="block text-sm font-medium text-gray-700 mb-2">あなたの役割（提示内容）:</label>
+                                <textarea id="your-role" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="例: 守備時には中盤の底まで下がり、相手のカウンターを潰す"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- AI資料作成サポート -->
+                        <div class="bg-indigo-50 p-6 rounded-lg shadow-inner">
+                            <h3 class="text-2xl font-semibold text-indigo-800 mb-4">AI相談：資料作成サポート</h3>
+                            <label for="ai-presentation-query" class="block text-sm font-medium text-gray-700 mb-2">次の試合までに意識すべきことを教えて</label>
+                            <input type="text" id="ai-presentation-query" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="例: MNCの攻撃パターンに対する守備の原則">
+                            <button onclick="simulateAIResponse('presentation')" class="mt-3 w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">資料の骨子を作成</button>
+                            <div id="ai-response-presentation" class="mt-4 p-3 bg-white border border-indigo-200 rounded-lg hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-4">資料作成エリア</h3>
+                        <p class="text-gray-600">この内容を監督に提示し、チームの意識統一を図るための資料を作成します。</p>
+                        <button class="mt-4 py-2 px-4 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 transition duration-300">資料PDFをダウンロード</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createOpponentContent() {
+            // 対戦相手ページの内容 (PPT画像に基づき構造化)
+            return `
+                <div class="space-y-6 p-4 md:p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 border-b pb-3 mb-6">対戦相手分析</h2>
+                    <p class="text-gray-600 mb-8">次の対戦相手の戦術、主要選手、弱点などを分析し、試合に役立つ情報を提供します。</p>
+        
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- 次の対戦相手 -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-yellow-500">
+                            <h3 class="text-xl font-semibold text-yellow-700 mb-4">次の試合相手</h3>
+                            <p class="text-2xl font-bold text-gray-900 mb-4">MNC (仮想の対戦相手)</p>
+                            <div class="text-center bg-gray-100 p-8 rounded-lg">
+                                <!-- PPTのスライドのイメージを表現 -->
+                                <svg class="w-20 h-20 text-yellow-600 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.25a.8.8 0 0 0 .68.3h4a2 2 0 0 1 2 2v2M18 15v3m-3 0h6m-3-6v6"></path></svg>
+                                <p class="text-gray-700 mt-2 text-lg">エンブレムのプレースホルダー</p>
+                            </div>
+                        </div>
+        
+                        <!-- 詳細分析 -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-yellow-500">
+                            <h3 class="text-xl font-semibold text-yellow-700 mb-4">戦術と特徴</h3>
+                            <ul class="list-disc list-inside space-y-2 text-lg text-gray-700">
+                                <li>予想フォーメーション: 4-2-3-1 (PPTより)</li>
+                                <li>主な攻撃パターン: サイドバックの積極的なオーバーラップ</li>
+                                <li>守備時の弱点: ボランチ脇のスペース</li>
+                            </ul>
+                            <button class="mt-4 py-2 px-4 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300">詳細レポートをダウンロード</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 全ページコンテンツのマッピング
+        const pageContents = {
+            'profile': { title: 'プロファイル', content: createProfileContent },
+            'team': { title: 'チーム分析', content: createTeamContent },
+            'training': { title: 'トレーニング計画', content: createTrainingContent },
+            'review': { title: '試合振り返り', content: createReviewContent },
+            'presentation': { title: 'プレゼンテーション資料作成', content: createPresentationContent },
+            'opponent': { title: '対戦相手分析', content: createOpponentContent }
+        };
+
+        // --- 2. ページ切り替えロジック ---
+
+        function navigateTo(pageId) {
+            currentPage = pageId;
+            renderPage();
+            
+            // サイドバーのアクティブ状態を更新
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeMenuItem = document.getElementById(`menu-${pageId}`);
+            if (activeMenuItem) {
+                activeMenuItem.classList.add('active');
+            }
+        }
+
+        function renderPage() {
+            const mainContent = document.getElementById('main-content');
+            const pageData = pageContents[currentPage];
+
+            if (pageData) {
+                // ヘッダーを更新
+                updateHeader(pageData.title);
+                
+                // メインコンテンツを更新
+                mainContent.innerHTML = pageData.content();
+
+            } else {
+                // ページが見つからない場合の処理 (通常は発生しない)
+                mainContent.innerHTML = `<div class="p-8 text-center text-gray-500">ページが見つかりません。</div>`;
+                updateHeader('エラー');
+            }
+        }
+        
+        // AI相談のシミュレーション（ボタンが機能することを示すため）
+        function simulateAIResponse(pageId) {
+            const responseDiv = document.getElementById(`ai-response-${pageId}`);
+            if (!responseDiv) return;
+
+            const inputElement = document.getElementById(`ai-${pageId}-query`);
+            const query = inputElement ? inputElement.value : "具体的な質問がありません";
+
+            let responseText = ``;
+
+            switch (pageId) {
+                case 'team':
+                    responseText = `**AIアドバイス:** チームのフィジカルの強さを活かすため、4-4-2のダイヤモンド型に変更し、中盤でボールを奪い取る戦術が有効です。${query} のような戦術も試す価値があります。`;
+                    break;
+                case 'review':
+                    responseText = `**AI分析結果:** ${query} のシーンでは、相手の次の動きを予測し、プレスではなくカバーリングを選択した方が、より失点リスクを低減できました。`;
+                    break;
+                case 'training':
+                    responseText = `**AI提案:** ${query} の目的を達成するため、3つのドリルを提案します：1. 5m四方のパス回し、2. コーンを使ったドリブル＆シュート、3. ミニゲームでのポジショニング練習。`;
+                    break;
+                case 'presentation':
+                     responseText = `**AI骨子:** 資料の構成案を作成しました。1. 相手の攻撃傾向 (4-2-3-1の弱点)、2. チームの守備原則、3. あなたの具体的な役割、4. 試合開始15分間の目標。`;
+                    break;
+                default:
+                    responseText = `AIは現在考え中です...`;
+            }
+
+            responseDiv.innerHTML = `<p class="font-semibold text-indigo-700 mb-2">AI応答</p><p class="text-gray-800">${responseText}</p>`;
+            responseDiv.classList.remove('hidden');
+        }
+
+
+        // --- 初期化 ---
+        window.onload = () => {
+            loadTeamPlayers(); // チームメンバーデータをロード
+            // 初期画面の描画 ('profile' ページから開始)
+            navigateTo('profile');
+        };
+        
+        // addPlayerToTeam関数はグローバルスコープで定義されているため、HTMLから直接呼び出せます。
+
+    </script>
+</body>
+</html>
